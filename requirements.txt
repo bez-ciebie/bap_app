@@ -1,0 +1,4 @@
+pandas==2.1.2
+plotly==5.18.0
+streamlit==1.28.1
+streamlit-antd-component==0.2.3
