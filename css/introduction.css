@@ -4,17 +4,7 @@ h1 {
     color:#012d64
 }
 
-.card {
-    margin: 30px auto;
-    width: 100%;
-    height: 100%;
-    border-radius: 40px;
-    box-shadow: 5px 5px 30px 7px rgba(0,0,0,0.25), -5px -5px 30px 7px rgba(0,0,0,0.22);
-    transition: 0.4s;
-    flex-shrink: 3;
-    align-items: center !important;
-    text-align: center !important;
-  }
+
 
 .about-title {
     text-align: center;

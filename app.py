@@ -1,5 +1,6 @@
 #---PAKETLER---
 import pandas as pd
+import numpy as np
 from pathlib import Path
 import plotly.express as px
 import streamlit as st
@@ -19,7 +20,7 @@ st.set_page_config(page_title = 'BAP', page_icon = '🗺️', layout = "wide", i
 @st.cache_data
 def fetch_data(path):
     return pd.read_csv(DATA_DIR / path, low_memory = False)
-df = fetch_data('dashboard_data.csv')
+df = fetch_data('dashboard_data_1.csv')
 
 @st.cache_data
 def fetch_age():
@@ -89,6 +90,7 @@ if menu == 'Introduction':
     <img class="tedu-img" src="https://anket.tedu.edu.tr/assets/images/logo.png">
     </div>
     </body>""", unsafe_allow_html=True)
+    sac.divider(label='', icon='building', align='center')
 
     # About the sites
     site_1, site_2 = st.columns(2)
@@ -104,7 +106,6 @@ if menu == 'Introduction':
         st.image('https://kampusteengelsizyasam.files.wordpress.com/2011/05/0651.jpg', caption = 'Ankara University, Cebeci, Ankara', use_column_width = 'always')
 
     # Introduction
-    sac.divider(label='', icon='building', align='center')
     st.markdown("""
                 <body>
                 <style>
@@ -135,8 +136,16 @@ elif menu == 'Architectural':
                 """, unsafe_allow_html=True)
     # Map
     # Filters
-    arch_1, arch_2, arch_3, arch_4, arch_5 = st.columns(5)
+    arch_1, arch_2, arch_3, arch_4, arch_5, arch_6 = st.columns([1.5,1.5,1,1,1,1])
     with arch_1:
+        arch_urb = sac.checkbox(items=[
+            'Period Structure',
+            'Urban Transformation',
+            'Ruined'
+        ],label = 'Select Urban Transformation Status', index = [], format_func='title', check_all='Select all', align='center')
+        if arch_urb == []:
+            arch_urb = ['Period Structure', 'Urban Transformation', 'Ruined', np.nan]
+    with arch_2:
         arch_reg = sac.checkbox(items=[
             'Registered',
             'Not Registered'
@@ -146,21 +155,20 @@ elif menu == 'Architectural':
         elif arch_reg == ['Not Registered']:
             arch_reg = ['Değil']
         else:
-            arch_reg[0] = 'Tescilli'
-            arch_reg[1] = 'Değil'
-    with arch_2:
+            arch_reg = ['Tescilli', 'Değil', np.nan]
+    with arch_3:
         arch_neigh = st.multiselect('Select Neighborhood', options = df['Mahalle'].dropna().unique())
         if arch_neigh == []:
-            arch_neigh = df['Mahalle'].dropna().unique()
-    with arch_3:
+            arch_neigh = df['Mahalle'].unique()
+    with arch_4:
         arch_func = st.multiselect('Select Function', options = df['İşlev'].dropna().unique())
         if arch_func == []:
-            arch_func = df['İşlev'].dropna().unique()
-    with arch_4:
+            arch_func = df['İşlev'].unique()
+    with arch_5:
         arch_kat = st.multiselect('Select Number of Storeys', options = df['Kat Sayısı'].drop_duplicates().dropna().sort_values().astype(int))
         if arch_kat == []:
-            arch_kat = df['Kat Sayısı'].dropna().unique()
-    with arch_5:
+            arch_kat = df['Kat Sayısı'].unique()
+    with arch_6:
         arch_area = sac.checkbox(items=[
             '2',
             '3',
@@ -168,21 +176,24 @@ elif menu == 'Architectural':
             '5',
             '6'
         ],label = 'Select Area', index = [0, 1, 2, 3, 4], format_func='title', check_all='Select all', align='center')
-        arch_area = [int(area) for area in arch_area]
+        if arch_area == []:
+            arch_area = ['2', '3', '4', '5', '6', np.nan]
+        arch_area = [int(area) if not area is np.nan else np.nan for area in arch_area]
     # Scatter Map
     arch_fig = px.scatter_mapbox(data_frame = df.replace(['Tescilli', 'Değil'], ['Registered', 'Not Registered'])\
                                  .loc[df['Mahalle'].isin(arch_neigh)\
                                       &df['İşlev'].isin(arch_func)\
                                       &df['Kat Sayısı'].isin(arch_kat)\
                                       &df['Tescil Bilgisi'].isin(arch_reg)\
-                                      &df['bölge'].isin(arch_area),:],
+                                      &df['bölge'].isin(arch_area)\
+                                      &df['Açıklama'].isin(arch_urb),:],
                         lat = 'lat',
                         lon = 'lon',
                         color = 'Tescil Bilgisi',
                         zoom = 14,
                         mapbox_style="open-street-map",
                         color_discrete_map={'Registered':'#2B3499', 'Not Registered':'#ED7D31'},
-                        hover_data = ['Yapı', 'İşlev', 'No', 'Kat Sayısı', 'Mimarı', 'Mahalle', 'bölge'],
+                        hover_data = ['Yapı', 'İşlev', 'No', 'Kat Sayısı', 'Mimarı', 'Mahalle', 'bölge', 'Açıklama'],
                         labels = {'Tescil Bilgisi':'Registration',
                                   'Yapı':'Structure',
                                   'No':'Detailed Area Number',
@@ -190,7 +201,8 @@ elif menu == 'Architectural':
                                   'Mimarı':'Architect',
                                   'Mahalle':'Neighborhood',
                                   'bölge':'Area',
-                                  'İşlev':'Function'}
+                                  'İşlev':'Function',
+                                  'Açıklama':'Urban Transformation Status'}
                         )
     arch_fig.update_layout(margin={"r":0,"t":0,"l":0,"b":0},
                            legend=dict(
@@ -202,7 +214,6 @@ elif menu == 'Architectural':
                          
     ))
     st.plotly_chart(arch_fig, use_container_width = True, theme = None)
-
 # Functional Transformation
 elif menu == 'Functional Transformation':
     # Title
@@ -229,8 +240,16 @@ elif menu == 'Functional Transformation':
         st.image(Image.open(IMG_DIR / 'func_2.jpg'), use_column_width=True)
     sac.divider(label='', icon='building', align='center')
     # Filters
-    func_1, func_2, func_3, func_4, func_5 = st.columns(5)
+    func_1, func_2, func_3, func_4, func_5, func_6 = st.columns([1.5, 1.5, 1, 1, 1, 1])
     with func_1:
+        func_urb = sac.checkbox(items=[
+            'Period Structure',
+            'Urban Transformation',
+            'Ruined'
+        ],label = 'Select Urban Transformation Status', index = [], format_func='title', check_all='Select all', align='center')
+        if func_urb == []:
+            func_urb = ['Period Structure', 'Urban Transformation', 'Ruined', np.nan]
+    with func_2:
         func_reg = sac.checkbox(items=[
             'Registered',
             'Not Registered'
@@ -240,21 +259,20 @@ elif menu == 'Functional Transformation':
         elif func_reg == ['Not Registered']:
             func_reg = ['Değil']
         else:
-            func_reg[0] = 'Tescilli'
-            func_reg[1] = 'Değil'
-    with func_2:
+            func_reg = ['Tescilli', 'Değil', np.nan]
+    with func_3:
         func_neigh = st.multiselect('Select Neighborhood', options = df['Mahalle'].dropna().unique())
         if func_neigh == []:
-            func_neigh = df['Mahalle'].dropna().unique()
-    with func_3:
+            func_neigh = df['Mahalle'].unique()
+    with func_4:
         func_func = st.multiselect('Select Function', options = df['İşlev'].dropna().unique(), default = ['Konut', 'Konut + Ticaret', 'Sağlık', 'Yurt', 'Eğitim'])
         if func_func == []:
-            func_func = df['İşlev'].dropna().unique()
-    with func_4:
+            func_func = df['İşlev'].unique()
+    with func_5:
         func_kat = st.multiselect('Select Number of Storeys', options = df['Kat Sayısı'].drop_duplicates().dropna().sort_values().astype(int))
         if func_kat == []:
-            func_kat = df['Kat Sayısı'].dropna().unique()
-    with func_5:
+            func_kat = df['Kat Sayısı'].unique()
+    with func_6:
         func_area = sac.checkbox(items=[
             '2',
             '3',
@@ -262,7 +280,9 @@ elif menu == 'Functional Transformation':
             '5',
             '6'
         ],label = 'Select Area', index = [0, 1, 2, 3, 4], format_func='title', check_all='Select all', align='center')
-        func_area = [int(area) for area in func_area]
+        if func_area == []:
+            func_area = ['2', '3', '4', '5', '6', np.nan]
+        func_area = [int(area) if not area is np.nan else np.nan for area in func_area]
 
     # Scatter Map
     func_fig = px.scatter_mapbox(data_frame = df.replace(['Tescilli', 'Değil'], ['Registered', 'Not Registered'])\
@@ -270,13 +290,14 @@ elif menu == 'Functional Transformation':
                                       &df['İşlev'].isin(func_func)\
                                       &df['Kat Sayısı'].isin(func_kat)\
                                       &df['Tescil Bilgisi'].isin(func_reg)\
-                                      &df['bölge'].isin(func_area),:],
+                                      &df['bölge'].isin(func_area)\
+                                      &df['Açıklama'].isin(func_urb),:],
                         lat = 'lat',
                         lon = 'lon',
                         color = 'İşlev',
                         zoom = 14,
                         mapbox_style="open-street-map",
-                        hover_data = ['Yapı', 'İşlev', 'No', 'Kat Sayısı', 'Mimarı', 'Mahalle', 'bölge'],
+                        hover_data = ['Yapı', 'İşlev', 'No', 'Kat Sayısı', 'Mimarı', 'Mahalle', 'bölge', 'Açıklama'],
                         labels = {'Tescil Bilgisi':'Registration',
                                   'Yapı':'Structure',
                                   'No':'Detailed Area Number',
@@ -284,7 +305,8 @@ elif menu == 'Functional Transformation':
                                   'Mimarı':'Architect',
                                   'Mahalle':'Neighborhood',
                                   'bölge':'Area',
-                                  'İşlev':'Function'})
+                                  'İşlev':'Function',
+                                  'Açıklama':'Urban Transformation Status'})
     
     func_fig.update_layout(margin={"r":0,"t":0,"l":0,"b":0},
                            legend=dict(
@@ -325,7 +347,7 @@ elif menu == 'Demographics':
         with yas_map_col_1:
             yas_map_neigh = st.multiselect('Select Neighborhood', options = yas_df['Mahalle'].dropna().unique())
             if yas_map_neigh == []:
-                yas_map_neigh = yas_df['Mahalle'].dropna().unique()
+                yas_map_neigh = yas_df['Mahalle'].unique()
         with yas_map_col_2:
                 yas_map_yil = st.slider('Select Year', min_value = yas_df['yıl'].dropna().astype(int).min(), max_value = yas_df['yıl'].dropna().astype(int).max(), value = 2022, key = 'map_slider')
         # Data Manipulation
@@ -395,7 +417,7 @@ elif menu == 'Demographics':
         with edu_map_col_1:
             edu_map_neigh = st.multiselect('Select Neighborhood', options = egitim_df['MAHALLEADI'].dropna().unique(), key = 'edu_neigh_key')
             if edu_map_neigh == []:
-                edu_map_neigh = egitim_df['MAHALLEADI'].dropna().unique()
+                edu_map_neigh = egitim_df['MAHALLEADI'].unique()
         with edu_map_col_2:
                 edu_map_yil = st.slider('Select Year', min_value = egitim_df['YIL'].dropna().astype(int).min(), max_value = egitim_df['YIL'].dropna().astype(int).max(), value = 2021, key = 'edu_slider')
         # Data Manipulation
@@ -468,7 +490,7 @@ elif menu == 'Demographics':
         with mari_map_col_1:
             mari_map_neigh = st.multiselect('Select Neighborhood', options = medeni_df['MAHALLE ADI'].dropna().unique(), key = 'mari_neigh_key')
             if mari_map_neigh == []:
-                mari_map_neigh = medeni_df['MAHALLE ADI'].dropna().unique()
+                mari_map_neigh = medeni_df['MAHALLE ADI'].unique()
         with mari_map_col_2:
                 mari_map_yil = st.slider('Select Year', min_value = medeni_df['yıl'].dropna().astype(int).min(), max_value = medeni_df['yıl'].dropna().astype(int).max(), value = 2022, key = 'mari_slider')
         # Data Manipulation
@@ -539,61 +561,65 @@ elif menu == 'Physical Status':
     
     # Kentsel Dönüşüm
     sac.divider(label='Urban Transformation', icon='building', align='center')
-    st.warning("Kentsel dönüşümle ilgili yeterli veri bulunmamaktadır.", icon="⚠️")
-    st.info('Urban Transformation: As a residential urban fabric, Cebeci has witnessed many changes and transformations since Ankara was declared as the capital city. Following the urban transformation boom affecting many early-settled neighborhoods, Cebeci area also became one of these. The districts located on the south of Ankara University Cebeci Campus houses many examples of such urban transformation activities scattered around. Cebeci Stadium demolished to implement a millet bahçesi project is the most remarkable example of urban transformation implementations in the area.', icon="📍")
-
-    # Kat Yüksekliği
-    sac.divider(label='Number of Storey', icon='building', align='center')
-
     # Map
     # Filters
-    storey_1, storey_2, storey_3, storey_4, storey_5 = st.columns(5)
-    with storey_1:
-        storey_reg = sac.checkbox(items=[
+    urban_1, urban_2, urban_3, urban_4, urban_5, urban_6 = st.columns([1.5, 1.5, 1, 1, 1, 1])
+    with urban_1:
+        urban_urb = sac.checkbox(items=[
+            'Period Structure',
+            'Urban Transformation',
+            'Ruined'
+        ],label = 'Select Urban Transformation Status', index = [0, 1, 2], format_func='title', check_all='Select all', align='center')
+        if urban_urb == []:
+            urban_urb = ['Period Structure', 'Urban Transformation', 'Ruined', np.nan]
+    with urban_2:
+        urban_reg = sac.checkbox(items=[
             'Registered',
             'Not Registered'
         ],label = 'Select Registration', index = [0, 1], format_func='title', check_all='Select all', align='center')
-        if storey_reg == ['Registered']:
-            storey_reg = ['Tescilli']
-        elif storey_reg == ['Not Registered']:
-            storey_reg = ['Değil']
+        if urban_reg == ['Registered']:
+            urban_reg = ['Tescilli']
+        elif urban_reg == ['Not Registered']:
+            urban_reg = ['Değil']
         else:
-            storey_reg[0] = 'Tescilli'
-            storey_reg[1] = 'Değil'
-    with storey_2:
-        storey_neigh = st.multiselect('Select Neighborhood', options = df['Mahalle'].dropna().unique())
-        if storey_neigh == []:
-            storey_neigh = df['Mahalle'].dropna().unique()
-    with storey_3:
-        storey_func = st.multiselect('Select Function', options = df['İşlev'].dropna().unique())
-        if storey_func == []:
-            storey_func = df['İşlev'].dropna().unique()
-    with storey_4:
-        storey_kat = st.multiselect('Select Number of Storeys', options = df['Kat Sayısı'].drop_duplicates().dropna().sort_values().astype(int))
-        if storey_kat == []:
-            storey_kat = df['Kat Sayısı'].dropna().unique()
-    with storey_5:
-        storey_area = sac.checkbox(items=[
+            urban_reg = ['Tescilli', 'Değil', np.nan]
+    with urban_3:
+        urban_neigh = st.multiselect('Select Neighborhood', options = df['Mahalle'].dropna().unique())
+        if urban_neigh == []:
+            urban_neigh = df['Mahalle'].unique()
+    with urban_4:
+        urban_func = st.multiselect('Select Function', options = df['İşlev'].dropna().unique())
+        if urban_func == []:
+            urban_func = df['İşlev'].unique()
+    with urban_5:
+        urban_kat = st.multiselect('Select Number of Storeys', options = df['Kat Sayısı'].drop_duplicates().dropna().sort_values().astype(int))
+        if urban_kat == []:
+            urban_kat = df['Kat Sayısı'].unique()
+    with urban_6:
+        urban_area = sac.checkbox(items=[
             '2',
             '3',
             '4',
             '5',
             '6'
         ],label = 'Select Area', index = [0, 1, 2, 3, 4], format_func='title', check_all='Select all', align='center')
-        storey_area = [int(area) for area in storey_area]
+        if urban_area == []:
+            urban_area = ['2', '3', '4', '5', '6', np.nan]
+        urban_area = [int(area) if not area is np.nan else np.nan for area in urban_area]
     # Scatter Map
-    storey_fig = px.scatter_mapbox(data_frame = df.replace(['Tescilli', 'Değil'], ['Registered', 'Not Registered'])\
-                                 .loc[df['Mahalle'].isin(storey_neigh)\
-                                      &df['İşlev'].isin(storey_func)\
-                                      &df['Kat Sayısı'].isin(storey_kat)\
-                                      &df['Tescil Bilgisi'].isin(storey_reg)\
-                                      &df['bölge'].isin(storey_area),:],
+    urban_fig = px.scatter_mapbox(data_frame = df.replace(['Tescilli', 'Değil'], ['Registered', 'Not Registered'])\
+                                 .loc[df['Mahalle'].isin(urban_neigh)\
+                                      &df['İşlev'].isin(urban_func)\
+                                      &df['Kat Sayısı'].isin(urban_kat)\
+                                      &df['Tescil Bilgisi'].isin(urban_reg)\
+                                      &df['bölge'].isin(urban_area)\
+                                      &df['Açıklama'].isin(urban_urb),:],
                         lat = 'lat',
                         lon = 'lon',
-                        color = 'Kat Sayısı',
+                        color = 'Açıklama',
                         zoom = 14,
                         mapbox_style="carto-darkmatter",
-                        hover_data = ['Yapı', 'İşlev', 'No', 'Kat Sayısı', 'Mimarı', 'Mahalle', 'bölge'],
+                        hover_data = ['Yapı', 'İşlev', 'No', 'Kat Sayısı', 'Mimarı', 'Mahalle', 'bölge', 'Açıklama'],
                         labels = {'Tescil Bilgisi':'Registration',
                                   'Yapı':'Structure',
                                   'No':'Detailed Area Number',
@@ -601,7 +627,93 @@ elif menu == 'Physical Status':
                                   'Mimarı':'Architect',
                                   'Mahalle':'Neighborhood',
                                   'bölge':'Area',
-                                  'İşlev':'Function'},
+                                  'İşlev':'Function',
+                                  'Açıklama':'Urban Transformation Status'},                                  
+                        )
+    urban_fig.update_layout(margin={"r":0,"t":0,"l":0,"b":0},
+                           legend=dict(
+                            orientation="h",
+                            xanchor="center",
+                            x = 0.5),
+                            font=dict(
+                            size=14
+                         
+    ))
+    st.plotly_chart(urban_fig, use_container_width = True, theme = None)
+
+    st.info('Urban Transformation: As a residential urban fabric, Cebeci has witnessed many changes and transformations since Ankara was declared as the capital city. Following the urban transformation boom affecting many early-settled neighborhoods, Cebeci area also became one of these. The districts located on the south of Ankara University Cebeci Campus houses many examples of such urban transformation activities scattered around. Cebeci Stadium demolished to implement a millet bahçesi project is the most remarkable example of urban transformation implementations in the area.', icon="📍")
+
+    # Kat Yüksekliği
+    sac.divider(label='Number of Storey', icon='building', align='center')
+
+    # Map
+    # Filters
+    storey_1, storey_2, storey_3, storey_4, storey_5, storey_6 = st.columns([1.5, 1.5, 1, 1, 1, 1])
+    with storey_1:
+        storey_urb = sac.checkbox(items=[
+            'Period Structure',
+            'Urban Transformation',
+            'Ruined'
+        ],label = 'Select Urban Transformation Status', index = [], format_func='title', check_all='Select all', align='center', key = 'storey_urb_key')
+        if storey_urb == []:
+            storey_urb = ['Period Structure', 'Urban Transformation', 'Ruined', np.nan]
+    with storey_2:
+        storey_reg = sac.checkbox(items=[
+            'Registered',
+            'Not Registered'
+        ],label = 'Select Registration', index = [0, 1], format_func='title', check_all='Select all', align='center', key = 'storey_reg_key')
+        if storey_reg == ['Registered']:
+            storey_reg = ['Tescilli']
+        elif storey_reg == ['Not Registered']:
+            storey_reg = ['Değil']
+        else:
+            storey_reg = ['Tescilli', 'Değil', np.nan]
+    with storey_3:
+        storey_neigh = st.multiselect('Select Neighborhood', options = df['Mahalle'].dropna().unique(), key = 'storey_neigh_key')
+        if storey_neigh == []:
+            storey_neigh = df['Mahalle'].unique()
+    with storey_4:
+        storey_func = st.multiselect('Select Function', options = df['İşlev'].dropna().unique(), key = 'storey_func_key')
+        if storey_func == []:
+            storey_func = df['İşlev'].unique()
+    with storey_5:
+        storey_kat = st.multiselect('Select Number of Storeys', options = df['Kat Sayısı'].drop_duplicates().dropna().sort_values().astype(int), key = 'storey_kat_key')
+        if storey_kat == []:
+            storey_kat = df['Kat Sayısı'].unique()
+    with storey_6:
+        storey_area = sac.checkbox(items=[
+            '2',
+            '3',
+            '4',
+            '5',
+            '6'
+        ],label = 'Select Area', index = [0, 1, 2, 3, 4], format_func='title', check_all='Select all', align='center', key = 'storey_area_key')
+        if storey_area == []:
+            storey_area = ['2', '3', '4', '5', '6', np.nan]
+        storey_area = [int(area) if not area is np.nan else np.nan for area in storey_area]
+    # Scatter Map
+    storey_fig = px.scatter_mapbox(data_frame = df.replace(['Tescilli', 'Değil'], ['Registered', 'Not Registered'])\
+                                 .loc[df['Mahalle'].isin(storey_neigh)\
+                                      &df['İşlev'].isin(storey_func)\
+                                      &df['Kat Sayısı'].isin(storey_kat)\
+                                      &df['Tescil Bilgisi'].isin(storey_reg)\
+                                      &df['bölge'].isin(storey_area)\
+                                      &df['Açıklama'].isin(storey_urb),:],
+                        lat = 'lat',
+                        lon = 'lon',
+                        color = 'Kat Sayısı',
+                        zoom = 14,
+                        mapbox_style="carto-darkmatter",
+                        hover_data = ['Yapı', 'İşlev', 'No', 'Kat Sayısı', 'Mimarı', 'Mahalle', 'bölge', 'Açıklama'],
+                        labels = {'Tescil Bilgisi':'Registration',
+                                  'Yapı':'Structure',
+                                  'No':'Detailed Area Number',
+                                  'Kat Sayısı':'Number of Storey',
+                                  'Mimarı':'Architect',
+                                  'Mahalle':'Neighborhood',
+                                  'bölge':'Area',
+                                  'İşlev':'Function',
+                                  'Açıklama':'Urban Transformation Status'},
                         color_continuous_scale = px.colors.sequential.YlOrRd
                                   
                         )
@@ -615,6 +727,7 @@ elif menu == 'Physical Status':
                          
     ))
     st.plotly_chart(storey_fig, use_container_width = True, theme = None)
+    st.info('Number of Storey: The general layout on the number of storey of the buildings in the area mostly remain same throughout the years. In the area, the buildings in the inner parts are mostly four or five-storey-high while the ones facing the Celal Bayar Street and Ziya Gökalp Street are eight or nine-storey buildings. These buildings are acting like borders of the neighborhoods and dividers of the area into two. The buildings re-constructed after urban transformation projects also built in accordance with the general height of the area. However, the new apartments constructed after the urban transformation projects implemented in the squatter houses zone has incompatible heights reaching to thirteen stories.', icon="📍")
 else:
     st.title('Conclusion/Remarks')
 
