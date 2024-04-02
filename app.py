@@ -6,6 +6,7 @@ import plotly.express as px
 import streamlit as st
 from PIL import Image
 import streamlit_antd_components as sac
+import sqlite3
 
 #---KONUMLAR---
 CUR_DIR = Path.cwd()
@@ -59,6 +60,8 @@ def fetch_medeni_map():
 result_medeni_df = fetch_medeni_map()
 
 
+
+
 #---CSS---
 with open(CSS_DIR / 'introduction.css') as f:
     st.markdown(f'<style>{f.read()}</style>', unsafe_allow_html=True)
@@ -68,6 +71,15 @@ with open(CSS_DIR / 'introduction.css') as f:
 with st.sidebar:
     menu = sac.menu([
         sac.MenuItem('Introduction', icon='house-fill'),
+        sac.MenuItem('Data Visualisation', icon='bar-chart-line-fill', children = [
+            sac.MenuItem('Table', icon='buildings-fill'),
+            sac.MenuItem('Graphics', icon = 'building-fill-add'),
+        ]),
+        sac.MenuItem('ModelPrediction', icon='bar-chart-line-fill', children = [
+            sac.MenuItem('RandomForest', icon='buildings-fill'),
+            sac.MenuItem('LightGBM', icon = 'building-fill-add'),
+            sac.MenuItem('XGBoost', icon = 'people-fill'),
+        ]),
         sac.MenuItem('Analysis', icon='bar-chart-line-fill', children = [
             sac.MenuItem('Architectural', icon='buildings-fill'),
             sac.MenuItem('Functional Transformation', icon = 'building-fill-add'),
@@ -119,6 +131,91 @@ if menu == 'Introduction':
 
     st.warning("Autocad'den alınan poligon verilerinde sorun var. Birbirine çok yakın noktalar ya da 3 nokta var; poligonlar çizilemiyor. Autocad'den veriler alınırken hangi CRS bilgisine göre alındı?", icon = '⚠️')
 
+
+#-Data Visualization-
+# Table
+elif menu == 'Table':
+    # Title
+    st.markdown("""
+                <body>
+                <style>
+                h1 {
+                color: #012d64;
+                }
+                </style>
+                <h1>Table</h1>
+                </body>
+                """, unsafe_allow_html=True)
+    con = sqlite3.connect('data/data20240311.db',check_same_thread=False)
+    cur = con.cursor()
+    sql = 'select 煤种,Mad,Ad,Vdaf,Cdaf,Hdaf,Ndaf,Sdaf,Odaf,催化剂,助催化剂,供氢溶剂,气氛,转化率,油产率 from {0}'.format("Sheet1")
+    cur.execute(sql)
+    content = cur.fetchall()
+    labels = [tuple[0] for tuple in cur.description]
+    packs= pd.DataFrame(data = content, columns = labels)
+    cur.close()
+    con.close()
+
+    st.table(packs)
+
+#-Data Visualization-
+# Graphics
+elif menu == 'Graphics':
+    # Title
+    st.markdown("""
+                <body>
+                <style>
+                h1 {
+                color: #012d64;
+                }
+                </style>
+                <h1>Graphics</h1>
+                </body>
+                """, unsafe_allow_html=True)
+
+
+    con = sqlite3.connect('./data/data20240311.db',check_same_thread=False)
+    # 获取数据库热力表对转化率的内容
+    cur = con.cursor()
+    sql = 'select Mad,Ad,Vdaf,Cdaf,Hdaf,Ndaf,Sdaf,Odaf,T,P,Time,转化率 from {0}'.format("Sheet1")    
+    cur.execute(sql)
+    content = cur.fetchall()#只获得了数据
+
+    # 获取数据库表的表头
+    labels = [tuple[0] for tuple in cur.description]
+    #print(labels)
+    # 计算相关系数
+    content = pd.read_sql_query(sql, con)
+    data_float = [[float(value) if value.strip() else 0.00 for value in row] for row in content.values]
+    raw_data = pd.DataFrame(data_float, columns=labels)
+    raw_data_corr = raw_data.corr().to_dict(orient='records')
+
+    data_values = []
+    data_bigvalue = []
+    for i in raw_data_corr:
+        for j in list(i.values()):
+            data_values.append(round(j,2))
+        data_bigvalue.append(data_values)
+        data_values=[]
+    
+    legend = list(raw_data_corr[0].keys())
+
+    fig = px.imshow(data_bigvalue)
+
+    fig = px.imshow(data_bigvalue,
+                    labels=dict(),
+                    x=legend,
+                    y=legend,
+                    text_auto=True
+                   )
+    fig.update_xaxes(side="top")
+
+
+    tab1, tab2 = st.tabs(["Streamlit theme (default)", "Plotly native theme"])
+    with tab1:
+        st.plotly_chart(fig, theme="streamlit")
+    with tab2:
+        st.plotly_chart(fig, theme=None)
 
 #-ANALYSIS-
 # Architectural
