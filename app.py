@@ -17,47 +17,47 @@ IMG_DIR = CUR_DIR / 'images'
 #---SAYFA DÜZENİ---
 st.set_page_config(page_title = 'BAP', page_icon = '🗺️', layout = "wide", initial_sidebar_state = "auto")
 
-#---DATA---
-@st.cache_data
-def fetch_data(path):
-    return pd.read_csv(DATA_DIR / path, low_memory = False)
-df = fetch_data('dashboard_data_1.csv')
+# #---DATA---
+# @st.cache_data
+# def fetch_data(path):
+#     return pd.read_csv(DATA_DIR / path, low_memory = False)
+# df = fetch_data('dashboard_data_1.csv')
 
-@st.cache_data
-def fetch_age():
-    return df.merge(fetch_data('tuik_cinsiyet.csv').groupby(['MAHALLE ADI', 'yıl', 'yaş'])['sıklık'].sum().reset_index(), how = 'left', left_on = 'Mahalle', right_on = 'MAHALLE ADI')
-yas_df = fetch_age()
+# @st.cache_data
+# def fetch_age():
+#     return df.merge(fetch_data('tuik_cinsiyet.csv').groupby(['MAHALLE ADI', 'yıl', 'yaş'])['sıklık'].sum().reset_index(), how = 'left', left_on = 'Mahalle', right_on = 'MAHALLE ADI')
+# yas_df = fetch_age()
 
-@st.cache_data
-def fetch_age_map():
-    idx = yas_df[yas_df['yaş'] != 'GENEL TOPLAM'].groupby(['lat', 'lon', 'yıl'])['sıklık'].idxmax()
-    result_df = yas_df.loc[idx]
-    return result_df
-result_df = fetch_age_map()
+# @st.cache_data
+# def fetch_age_map():
+#     idx = yas_df[yas_df['yaş'] != 'GENEL TOPLAM'].groupby(['lat', 'lon', 'yıl'])['sıklık'].idxmax()
+#     result_df = yas_df.loc[idx]
+#     return result_df
+# result_df = fetch_age_map()
 
-@st.cache_data
-def fetch_egitim():
-    return df.merge(fetch_data('tuik_egitim.csv').groupby(['MAHALLEADI', 'YIL', 'EGITIM_DURUMU_ADI'])['NUFUS'].sum().reset_index(), how = 'left', left_on = 'Mahalle', right_on = 'MAHALLEADI')
-egitim_df = fetch_egitim()
+# @st.cache_data
+# def fetch_egitim():
+#     return df.merge(fetch_data('tuik_egitim.csv').groupby(['MAHALLEADI', 'YIL', 'EGITIM_DURUMU_ADI'])['NUFUS'].sum().reset_index(), how = 'left', left_on = 'Mahalle', right_on = 'MAHALLEADI')
+# egitim_df = fetch_egitim()
 
-@st.cache_data
-def fetch_egitim_map():
-    idx = egitim_df[egitim_df['EGITIM_DURUMU_ADI'] != 'GENEL TOPLAM'].groupby(['lat', 'lon', 'YIL'])['NUFUS'].idxmax()
-    result_egitim_df = egitim_df.loc[idx]
-    return result_egitim_df
-result_egitim_df = fetch_egitim_map()
+# @st.cache_data
+# def fetch_egitim_map():
+#     idx = egitim_df[egitim_df['EGITIM_DURUMU_ADI'] != 'GENEL TOPLAM'].groupby(['lat', 'lon', 'YIL'])['NUFUS'].idxmax()
+#     result_egitim_df = egitim_df.loc[idx]
+#     return result_egitim_df
+# result_egitim_df = fetch_egitim_map()
 
-@st.cache_data
-def fetch_medeni():
-    return df.merge(fetch_data('tuik_medeni_durum.csv').groupby(['MAHALLE ADI', 'yıl', 'MEDENİ DURUM'])['TOPLAM'].sum().reset_index(), how = 'left', left_on = 'Mahalle', right_on = 'MAHALLE ADI')
-medeni_df = fetch_medeni()
+# @st.cache_data
+# def fetch_medeni():
+#     return df.merge(fetch_data('tuik_medeni_durum.csv').groupby(['MAHALLE ADI', 'yıl', 'MEDENİ DURUM'])['TOPLAM'].sum().reset_index(), how = 'left', left_on = 'Mahalle', right_on = 'MAHALLE ADI')
+# medeni_df = fetch_medeni()
 
-@st.cache_data
-def fetch_medeni_map():
-    idx = medeni_df[medeni_df['MEDENİ DURUM'] != 'GENEL TOPLAM'].groupby(['lat', 'lon', 'yıl'])['TOPLAM'].idxmax()
-    result_medeni_df = medeni_df.loc[idx]
-    return result_medeni_df
-result_medeni_df = fetch_medeni_map()
+# @st.cache_data
+# def fetch_medeni_map():
+#     idx = medeni_df[medeni_df['MEDENİ DURUM'] != 'GENEL TOPLAM'].groupby(['lat', 'lon', 'yıl'])['TOPLAM'].idxmax()
+#     result_medeni_df = medeni_df.loc[idx]
+#     return result_medeni_df
+# result_medeni_df = fetch_medeni_map()
 
 
 
@@ -70,61 +70,47 @@ with open(CSS_DIR / 'introduction.css') as f:
 #-MENU-
 with st.sidebar:
     menu = sac.menu([
-        sac.MenuItem('Introduction', icon='house-fill'),
-        sac.MenuItem('Data Visualisation', icon='bar-chart-line-fill', children = [
-            sac.MenuItem('Table', icon='buildings-fill'),
-            sac.MenuItem('Graphics', icon = 'building-fill-add'),
+        sac.MenuItem('项目介绍', icon='house-fill'),
+        sac.MenuItem('元数据', icon='bar-chart-line-fill', children = [
+            sac.MenuItem('数据浏览', icon='buildings-fill'),
+            sac.MenuItem('图表可视化', icon = 'building-fill-add'),
         ]),
-        sac.MenuItem('Model', icon='bar-chart-line-fill'),
-        sac.MenuItem('Conclusion', icon='clipboard-check-fill'),], 
+        sac.MenuItem('模型预测', icon='bar-chart-line-fill'),
+        sac.MenuItem('总结', icon='clipboard-check-fill'),], 
         format_func='title', open_all=True)
     
 #-INTRODUCTION-
-if menu == 'Introduction':
+if menu == '项目介绍':
+
 
     st.title('欢迎来到煤直接液化可视化界面!')
 
     # About the project
     st.markdown("""<body>
     <div class="card">
-    <h2 class="about-title">About the Project</h2>
-    <p class="about-text">Within the scope of this project, a multilayered database of the area determined as ‘education zone’ in Jansen Plan will be constructed with two focal points: <strong>TED University Campus</strong> and <strong>Ankara University Cebeci Campus</strong>. As the content of the database, in addition to the digitalization of the visual sources such as aerial photographs and the development plans of the area, the visualization of the information studies till today will be studied and archived. With this archival study and database construction, a visual and multi-layered knowledge base and memory of a part of Ankara will be provided for the citizens and students which has the potential to be developed for the whole city.</p>
-    <img class="tedu-img" src="https://anket.tedu.edu.tr/assets/images/logo.png">
+    <h2 class="about-title">项目介绍</h2>
+    <p class="about-text">&emsp;&emsp;神华煤直接液化项目是全世界第一套商业化示范工程；是国家十五重点项目之一，是涉及国家能源战略、产业战略以及神华集团自身发展战略的重大项目；是一种洁净的煤技术和国家煤炭清洁转化的示范工程；是解决我国石油供应的一条重要途径，同时也是神华集团迈向世界煤炭及深加工等一流能源企业的重要跨越。</p>
     </div>
     </body>""", unsafe_allow_html=True)
+    
+    site_1, site_2,site_3,site_4 = st.columns(4)
+    with site_4:
+        st.image("images/jituan.png", width=300)
+    
     sac.divider(label='', icon='building', align='center')
 
     # About the sites
-    site_1, site_2 = st.columns(2)
-    with site_1:
-        st.markdown("""<body>
-        <div class="sites">
-        <p class="about-sites">After the declaration of Ankara as the new capital city, initiatives for a city plan were begun, and the first plan of the city was prepared by the German planner Dr. Carl Cristoph Lörcher in 1924, which included the major decisions of the following planning studies also: two parts as old city and Yenişehir (Cengizkan 2004, 25). After that, with the decision to give a modern image to the city, in 1927, an international competition was organized for the new Ankara master plan; and Berlin-based architect Hermann Jansen's plan, based on the ideas of the Garden City Movement, the predominant movement in Europe in that period, won the competition (Deriu 2013, 500). Cebeci is the area chosen for the development of the Higher Education District determined in Jansen Plan. Besides, there were new residential settlement formations related to the expansion of the city towards the foothills of the castle after being the capital city of the Republic. Further than that, as being close to the old and the new city, Cebeci was one of the squatter areas chosen to settle right after the declaration of Ankara as the new capital (Şenyapılı, 2004, 76). After 1930, Cebeci and Kolej districts witnessed construction of education buildings as pointed in Jansen plan and increase in the residential structures in relation – even emergence and increase in commercial activities in the following years -. Since then, the area continued to develop and transform with the changing conditions, plan decisions, etc. until 1990s mostly.<br><br>With the decision of the plan prepared in 1982, it was proposed to develop the city to the west; and in the direction of this decision, industrial zones and residential zones were proposed along this axis and mass housing projects were developed within these zones. During this sprawl of the city, the core of the city -including Cebeci district- began to be abandoned by the upper classes. In the end, after the movement of population outwards, the developments, changes and struggles in the city were began to be seen mainly outside the center of the city. Relatedly, Cebeci district could be said to be settled more and have a steady situation with minor function, spatial or social changes within itself.</p>
-        </div>
-        </body>""", unsafe_allow_html=True)
 
-    with site_2:
-        st.image('https://bisiklet.ego.gov.tr/wp-content/uploads/2020/09/guzergah-sihhiye.jpg', caption = 'Map of Cebeci, Ankara', use_column_width = 'always')
-        st.image('https://kampusteengelsizyasam.files.wordpress.com/2011/05/0651.jpg', caption = 'Ankara University, Cebeci, Ankara', use_column_width = 'always')
-
-    # Introduction
-    st.markdown("""
-                <body>
-                <style>
-                h2 {
-                color: #012d64;
-                }
-                </style>
-                <h2>Introduction</h2>
-                </body>
-                """, unsafe_allow_html=True)
-
-    st.warning("Autocad'den alınan poligon verilerinde sorun var. Birbirine çok yakın noktalar ya da 3 nokta var; poligonlar çizilemiyor. Autocad'den veriler alınırken hangi CRS bilgisine göre alındı?", icon = '⚠️')
+    st.markdown("""<body>
+    <div class="sites">
+    <p class="about-sites">&emsp;&emsp;神华鄂尔多斯煤制油分公司致力于发展中国的石油替代创新事业，按照“本质安全型、质量效益型、资源节约型、科技创新型、和谐发展型”的标准，全面加强和优化管理，不断创新提高，把公司逐步打造成为世界级煤制油样板公司。必将在更大范围、更广领域和更高层次上引领煤制油产业的发展，积极参与能源市场竞争，努力寻求与相关行业建立长期合作的战略伙伴关系。 </p>
+    </div>
+    </body>""", unsafe_allow_html=True)
 
 
 #-Data Visualization-
 # Table
-elif menu == 'Table':
+elif menu == '数据浏览':
     # Title
     st.markdown("""
                 <body>
@@ -133,7 +119,7 @@ elif menu == 'Table':
                 color: #012d64;
                 }
                 </style>
-                <h1>Table</h1>
+                <h1>数据浏览</h1>
                 </body>
                 """, unsafe_allow_html=True)
     con = sqlite3.connect('data/data20240311.db',check_same_thread=False)
@@ -150,7 +136,7 @@ elif menu == 'Table':
 
 #-Data Visualization-
 # Graphics
-elif menu == 'Graphics':
+elif menu == '图表可视化':
     # Title
     st.markdown("""
                 <body>
@@ -159,7 +145,7 @@ elif menu == 'Graphics':
                 color: #012d64;
                 }
                 </style>
-                <h1>Graphics</h1>
+                <h1>图表可视化</h1>
                 </body>
                 """, unsafe_allow_html=True)
 
@@ -209,7 +195,7 @@ elif menu == 'Graphics':
 
 #-ModelPrediction
 # RandomForest
-elif menu == 'Model':
+elif menu == '模型预测':
 
     st.title("机器学习的煤直接液化预测")
 
@@ -271,7 +257,7 @@ elif menu == 'Model':
             prediction = "XGBoost模型预测下的转化率为：83.22%，油产率为57.98%"
     st.success(prediction)
 else:
-    st.title('Conclusion/Remarks')
+    st.title('总结')
 
     # About the project
     st.markdown("""<body>
