@@ -7,6 +7,8 @@ import streamlit as st
 from PIL import Image
 import streamlit_antd_components as sac
 import sqlite3
+from models import RandomForest, lightgbm, xgboost
+
 
 #---KONUMLAR---
 CUR_DIR = Path.cwd()
@@ -90,6 +92,7 @@ if menu == '项目介绍':
     <div class="card">
     <h2 class="about-title">项目介绍</h2>
     <p class="about-text">&emsp;&emsp;神华煤直接液化项目是全世界第一套商业化示范工程；是国家十五重点项目之一，是涉及国家能源战略、产业战略以及神华集团自身发展战略的重大项目；是一种洁净的煤技术和国家煤炭清洁转化的示范工程；是解决我国石油供应的一条重要途径，同时也是神华集团迈向世界煤炭及深加工等一流能源企业的重要跨越。</p>
+    <p class="about-text">&emsp;&emsp;中国神华煤制油化工有限公司鄂尔多斯煤制油分公司隶属于中国神华煤制油化工有限公司，位于内蒙古鄂尔多斯伊金霍洛旗乌兰木伦镇，公司采用具有自主知识产权的神华煤直接液化工艺，以煤炭为原料，通过化学加工过程生产石油、石化产品，是世界上居领先地位的现代化大型煤炭直接液化工业化生产企业。拥有标准化的质量检测中心，配备一流的检测设备。公司拥有的煤直接液化试生产线是全世界第一套商业化运行生产线，是国家十五重点项目之一，是涉及国家能源战略、产业战略以及神华集团自身发展战略的重大项目，是一种先进的洁净煤技术和国家煤炭清洁转化的示范工程，是解决我国石油供应的一条重要途径。同时也是神华集团迈向世界煤炭及深加工等一流能源企业的重要跨越。</p>
     </div>
     </body>""", unsafe_allow_html=True)
     
@@ -148,50 +151,94 @@ elif menu == '图表可视化':
                 <h1>图表可视化</h1>
                 </body>
                 """, unsafe_allow_html=True)
+    col1, col2 = st.columns(2)
+    with col1:
+        con = sqlite3.connect('./data/data20240311.db',check_same_thread=False)
+        # 获取数据库热力表对转化率的内容
+        cur = con.cursor()
+        sql = 'select Mad,Ad,Vdaf,Cdaf,Hdaf,Ndaf,Sdaf,Odaf,T,P,Time,转化率 from {0}'.format("Sheet1")    
+        cur.execute(sql)
+        content = cur.fetchall()#只获得了数据
+
+        # 获取数据库表的表头
+        labels = [tuple[0] for tuple in cur.description]
+        #print(labels)
+        # 计算相关系数
+        content = pd.read_sql_query(sql, con)
+        data_float = [[float(value) if value.strip() else 0.00 for value in row] for row in content.values]
+        raw_data = pd.DataFrame(data_float, columns=labels)
+        raw_data_corr = raw_data.corr().to_dict(orient='records')
+
+        data_values = []
+        data_bigvalue = []
+        for i in raw_data_corr:
+            for j in list(i.values()):
+                data_values.append(round(j,2))
+            data_bigvalue.append(data_values)
+            data_values=[]
+        
+        legend = list(raw_data_corr[0].keys())
+
+        fig = px.imshow(data_bigvalue)
+
+        fig = px.imshow(data_bigvalue,
+                        labels=dict(),
+                        x=legend,
+                        y=legend,
+                        text_auto=True
+                    )
+        fig.update_xaxes(side="top")
 
 
-    con = sqlite3.connect('./data/data20240311.db',check_same_thread=False)
-    # 获取数据库热力表对转化率的内容
-    cur = con.cursor()
-    sql = 'select Mad,Ad,Vdaf,Cdaf,Hdaf,Ndaf,Sdaf,Odaf,T,P,Time,转化率 from {0}'.format("Sheet1")    
-    cur.execute(sql)
-    content = cur.fetchall()#只获得了数据
+        tab1, tab2 = st.tabs(["Streamlit theme (default)", "Plotly native theme"])
+        with tab1:
+            st.plotly_chart(fig, theme="streamlit")
+        with tab2:
+            st.plotly_chart(fig, theme=None)
 
-    # 获取数据库表的表头
-    labels = [tuple[0] for tuple in cur.description]
-    #print(labels)
-    # 计算相关系数
-    content = pd.read_sql_query(sql, con)
-    data_float = [[float(value) if value.strip() else 0.00 for value in row] for row in content.values]
-    raw_data = pd.DataFrame(data_float, columns=labels)
-    raw_data_corr = raw_data.corr().to_dict(orient='records')
+    with col2:
+        con = sqlite3.connect('./data/data20240311.db',check_same_thread=False)
+        # 获取数据库热力表对转化率的内容
+        cur = con.cursor()
+        sql = 'select Mad,Ad,Vdaf,Cdaf,Hdaf,Ndaf,Sdaf,Odaf,T,P,Time,油产率 from {0}'.format("Sheet1")    
+        cur.execute(sql)
+        content = cur.fetchall()#只获得了数据
 
-    data_values = []
-    data_bigvalue = []
-    for i in raw_data_corr:
-        for j in list(i.values()):
-            data_values.append(round(j,2))
-        data_bigvalue.append(data_values)
-        data_values=[]
-    
-    legend = list(raw_data_corr[0].keys())
+        # 获取数据库表的表头
+        labels = [tuple[0] for tuple in cur.description]
+        #print(labels)
+        # 计算相关系数
+        content = pd.read_sql_query(sql, con)
+        data_float = [[float(value) if value.strip() else 0.00 for value in row] for row in content.values]
+        raw_data = pd.DataFrame(data_float, columns=labels)
+        raw_data_corr = raw_data.corr().to_dict(orient='records')
 
-    fig = px.imshow(data_bigvalue)
+        data_values = []
+        data_bigvalue = []
+        for i in raw_data_corr:
+            for j in list(i.values()):
+                data_values.append(round(j,2))
+            data_bigvalue.append(data_values)
+            data_values=[]
+        
+        legend = list(raw_data_corr[0].keys())
 
-    fig = px.imshow(data_bigvalue,
-                    labels=dict(),
-                    x=legend,
-                    y=legend,
-                    text_auto=True
-                   )
-    fig.update_xaxes(side="top")
+        fig = px.imshow(data_bigvalue)
+
+        fig = px.imshow(data_bigvalue,
+                        labels=dict(),
+                        x=legend,
+                        y=legend,
+                        text_auto=True
+                    )
+        fig.update_xaxes(side="top")
 
 
-    tab1, tab2 = st.tabs(["Streamlit theme (default)", "Plotly native theme"])
-    with tab1:
-        st.plotly_chart(fig, theme="streamlit")
-    with tab2:
-        st.plotly_chart(fig, theme=None)
+        tab1, tab2 = st.tabs(["Streamlit theme (default)", "Plotly native theme"])
+        with tab1:
+            st.plotly_chart(fig, theme="streamlit")
+        with tab2:
+            st.plotly_chart(fig, theme=None)
 
 #-ModelPrediction
 # RandomForest
@@ -199,46 +246,124 @@ elif menu == '模型预测':
 
     st.title("机器学习的煤直接液化预测")
 
+    # st.write("煤样特征")
+    col1, col2, col3, col4, col5, col6, col7, col8 = st.columns(8)
+    with col1:
+        st.write("")
+        st.write("")
+        st.write("工业分析")
+    with col2:
+        Mad = st.number_input('Mad')
+    with col3:
+        Ad = st.number_input('Ad')
+    with col4:
+        Vdaf = st.number_input('Vdaf')
+    col1, col2, col3, col4, col5, col6, col7, col8 = st.columns(8)
+    with col1:
+        st.write("")
+        st.write("")
+        st.write("元素分析")
+    with col2:
+        C = st.number_input('C')
+    with col3:
+        H = st.number_input('H')
+    with col4:
+        N = st.number_input('N')
+    with col5:
+        S = st.number_input('S')
+    with col6:
+        O = st.number_input('O')
+    col1, col2, col3, col4, col5, col6, col7, col8 = st.columns(8)
+    with col1:
+        st.write("")
+        st.write("")
+        st.write("反应条件")
+    with col2:
+        T = st.number_input('T')
+    with col3:
+        P = st.number_input('P')
+    with col4:
+        Time = st.number_input('Time')
+    with col5:
+        Atmosphere = st.number_input('Atmosphere')
+   
+    #st.write("催化剂")
+    col1, col2, col3, col4, col5, col6, col7, col8 = st.columns(8)
+    with col1:
+        st.write("")
+        st.write("")
+        st.write("催化条件")    
+    with col2:
+        Catalyst = st.number_input('催化剂') 
+    with col3:
+        nS = st.number_input('nS\:nFe')
+    with col4:
+        Addition = st.number_input('Addition')
 
+    #st.write("供氢溶剂")    
+    col1, col2, col3, col4, col5, col6, col7, col8 = st.columns(8)
+    with col1:
+        st.write("")
+        st.write("")
+        st.write("溶剂条件")    
+    with col2:
+        Solvent_type = st.number_input('供氢溶剂')
+    with col3:
+        Sc = st.number_input('S\:C')
 
-    col1, col2, col3 = st.columns(3)
-    with col1:
-        Mad = st.text_input('Mad')
-    with col2:
-        Ad = st.text_input('Ad')
-    with col3:
-        Vdaf = st.text_input('Vdaf')
-    with col1:
-        C = st.text_input('C')
-    with col2:
-        H = st.text_input('H')
-    with col3:
-        N = st.text_input('N')
-    with col1:
-        S = st.text_input('S')
-    with col2:
-        O = st.text_input('O')
-    with col3:
-        T = st.text_input('T')
-    with col1:
-        P = st.text_input('P')
-    with col2:
-        Time = st.text_input('Time')
-    with col3:
-        Addition = st.text_input('Addition')
-    with col1:
-        nS = st.text_input('nS:nFe')
-    with col2:
-        SC = st.text_input('S:C')
-    with col3:
-        Solvent_type = st.text_input('Solvent_type')
-    with col1:
-        Catalyst = st.text_input('Catalyst')
-    with col2:
-        Atmosphere = st.text_input('Atmosphere')
-    with col3:
-        Coal = st.text_input('Coal')
+    # col1, col2, col3, col4, col5, col6 = st.columns(6)
+    # with col1:
+    #     st.write("煤样")
+    # with col2:
+    #     Coal = st.number_input('Coal')
+    # with col3:
  
+    # with col4:
+
+    # with col5:
+
+    # with col6:
+
+
+    # col1, col2, col3 = st.columns(3)  #Mad, Ad, Vdaf, C, H, N, S, O,T,P, Time, Addition, nS, Sc, Solvent_type, Catalyst, Atmosphere, Coal
+    # with col1:
+    #     Mad = st.text_input('Mad')
+    # with col2:
+    #     Ad = st.text_input('Ad')
+    # with col3:
+    #     Vdaf = st.text_input('Vdaf')
+    # with col1:
+    #     C = st.text_input('C')
+    # with col2:
+    #     H = st.text_input('H')
+    # with col3:
+    #     N = st.text_input('N')
+    # with col1:
+    #     S = st.text_input('S')
+    # with col2:
+    #     O = st.text_input('O')
+    # with col3:
+    #     T = st.text_input('T')
+    # with col1:
+    #     P = st.text_input('P')
+    # with col2:
+    #     Time = st.text_input('Time')
+    # with col3:
+    #     Addition = st.text_input('Addition')
+    # with col1:
+    #     nS = st.text_input('nS:nFe')
+    # with col2:
+    #     Sc = st.text_input('S:C')
+    # with col3:
+    #     Solvent_type = st.text_input('Solvent_type')
+    # with col1:
+    #     Catalyst = st.text_input('Catalyst')
+    # with col2:
+    #     Atmosphere = st.text_input('Atmosphere')
+    # with col3:
+    #     Coal = st.text_input('Coal')
+ 
+    #输入格式处理  遍历一遍 判断类型 前面是float:.2f  后面是int
 
     prediction = ''
     # About the sites
@@ -246,15 +371,18 @@ elif menu == '模型预测':
     with col1:
         if st.button("RF Prediction"):
             #RF_Conversion_prediction = RF_conversion_model.predict([[fo, fhi, flo, Jitter_percent, Jitter_Abs, RAP, PPQ,DDP,Shimmer,Shimmer_dB,APQ3,APQ5,APQ,DDA,NHR,HNR,RPDE,DFA,spread1,spread2,D2,PPE]])
-            prediction = "RF模型预测下的转化率为：83.22%，油产率为57.98%"
+            pair = RandomForest()
+            prediction = f"RF模型预测下的转化率为：{pair[0][0]:.2f}%，油产率为{pair[1][0]:.2f}%"
     with col2:
         if st.button("Lightgbm Prediction"):
             #RF_Conversion_prediction = RF_conversion_model.predict([[fo, fhi, flo, Jitter_percent, Jitter_Abs, RAP, PPQ,DDP,Shimmer,Shimmer_dB,APQ3,APQ5,APQ,DDA,NHR,HNR,RPDE,DFA,spread1,spread2,D2,PPE]])
-            prediction = "Lightgbm模型预测下的转化率为：83.22%，油产率为57.98%"
+            lightgbm()
+            prediction = ""
     with col3:
         if st.button("XGBoost Prediction"):
             #RF_Conversion_prediction = RF_conversion_model.predict([[fo, fhi, flo, Jitter_percent, Jitter_Abs, RAP, PPQ,DDP,Shimmer,Shimmer_dB,APQ3,APQ5,APQ,DDA,NHR,HNR,RPDE,DFA,spread1,spread2,D2,PPE]])
-            prediction = "XGBoost模型预测下的转化率为：83.22%，油产率为57.98%"
+            xgboost()           
+            prediction = ""
     st.success(prediction)
 else:
     st.title('总结')
