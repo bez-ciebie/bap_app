@@ -8,6 +8,7 @@ from PIL import Image
 import streamlit_antd_components as sac
 import sqlite3
 from models import RandomForest, lightgbm, xgboost
+import input_check
 
 
 #---KONUMLAR---
@@ -246,143 +247,129 @@ elif menu == '模型预测':
 
     st.title("机器学习的煤直接液化预测")
 
-    # st.write("煤样特征")
+    #工业分析
     col1, col2, col3, col4, col5, col6, col7, col8 = st.columns(8)
     with col1:
         st.write("")
         st.write("")
         st.write("工业分析")
     with col2:
-        Mad = st.number_input('Mad')
+        Mad = st.number_input('Mad/%', min_value=0.00, max_value=100.00, step=0.01)
     with col3:
-        Ad = st.number_input('Ad')
+        Ad = st.number_input('Ad/%', min_value=0.00, max_value=100.00, step=0.01)
     with col4:
-        Vdaf = st.number_input('Vdaf')
+        Vdaf = st.number_input('Vdaf/%', min_value=0.00, max_value=100.00, step=0.01)
+
+    #元素分析
     col1, col2, col3, col4, col5, col6, col7, col8 = st.columns(8)
     with col1:
         st.write("")
         st.write("")
         st.write("元素分析")
     with col2:
-        C = st.number_input('C')
+        Cin = st.number_input('C/%', min_value=0.00, max_value=100.00, step=0.01)
     with col3:
-        H = st.number_input('H')
+        Hin = st.number_input('H/%', min_value=0.00, max_value=100.00, step=0.01)
     with col4:
-        N = st.number_input('N')
+        Nin = st.number_input('N/%', min_value=0.00, max_value=100.00, step=0.01)
     with col5:
-        S = st.number_input('S')
+        Sin = st.number_input('S/%', min_value=0.00, max_value=100.00, step=0.01)
     with col6:
-        O = st.number_input('O')
+        Oin = st.number_input('O/%', min_value=0.00, max_value=100.00, step=0.01)
+
+    #反应条件
     col1, col2, col3, col4, col5, col6, col7, col8 = st.columns(8)
     with col1:
         st.write("")
         st.write("")
         st.write("反应条件")
     with col2:
-        T = st.number_input('T')
+        Tin = st.number_input('反应温度/℃', min_value=350, max_value=500, step=1) #摄氏度，预测时也是摄氏度   整数   350-500
     with col3:
-        P = st.number_input('P')
+        Pin = st.number_input('反应压力/MPa', min_value=0.00, max_value=30.00, step=0.01) # P  0-30  小数
     with col4:
-        Time = st.number_input('Time')
+        Time = st.number_input('恒温时间/min', min_value=0.00, max_value=120.00, step=0.01) #0-120  小数
     with col5:
-        Atmosphere = st.number_input('Atmosphere')
-    #st.write("催化剂")
+        Atmosphere = st.text_input('气氛', value="氢气")
+        #省略查询编码
+        Atmosphere = 3
+
+
+    #催化条件
     col1, col2, col3, col4, col5, col6, col7, col8 = st.columns(8)
     with col1:
         st.write("")
         st.write("")
         st.write("催化条件")    
     with col2:
-        Catalyst = st.number_input('催化剂') 
+        Catalyst = st.text_input('催化剂', value="Fe2O3") 
+        #省略查询编码
+        Catalyst = 35
     with col3:
-        nS = st.number_input('nS\:nFe')
+        nS = st.number_input('nS\:nFe', min_value=0.00, max_value=4.00, step=0.01)#小数
     with col4:
-        Addition = st.number_input('Addition')
+        Addition = st.number_input('催化剂添加量/%', min_value=0.00, max_value=10.00, step=0.01)
 
-    #st.write("供氢溶剂")    
+
+
+    #溶剂条件
     col1, col2, col3, col4, col5, col6, col7, col8 = st.columns(8)
     with col1:
         st.write("")
         st.write("")
         st.write("溶剂条件")    
     with col2:
-        Solvent_type = st.number_input('供氢溶剂')
+        Solvent_type = st.text_input('供氢溶剂', value="四氢萘")
+        #省略查询编码
+        Solvent_type = 6
     with col3:
-        Sc = st.number_input('S\:C')
-
-    # col1, col2, col3, col4, col5, col6 = st.columns(6)
-    # with col1:
-    #     st.write("煤样")
-    # with col2:
-    #     Coal = st.number_input('Coal')
-    # with col3:
+        Sc = st.number_input('溶煤比', min_value=0.00, max_value=3.00, step=0.01)#小数
  
-    # with col4:
-
-    # with col5:
-
-    # with col6:
 
 
-    # col1, col2, col3 = st.columns(3)  #Mad, Ad, Vdaf, C, H, N, S, O,T,P, Time, Addition, nS, Sc, Solvent_type, Catalyst, Atmosphere, Coal
-    # with col1:
-    #     Mad = st.text_input('Mad')
-    # with col2:
-    #     Ad = st.text_input('Ad')
-    # with col3:
-    #     Vdaf = st.text_input('Vdaf')
-    # with col1:
-    #     C = st.text_input('C')
-    # with col2:
-    #     H = st.text_input('H')
-    # with col3:
-    #     N = st.text_input('N')
-    # with col1:
-    #     S = st.text_input('S')
-    # with col2:
-    #     O = st.text_input('O')
-    # with col3:
-    #     T = st.text_input('T')
-    # with col1:
-    #     P = st.text_input('P')
-    # with col2:
-    #     Time = st.text_input('Time')
-    # with col3:
-    #     Addition = st.text_input('Addition')
-    # with col1:
-    #     nS = st.text_input('nS:nFe')
-    # with col2:
-    #     Sc = st.text_input('S:C')
-    # with col3:
-    #     Solvent_type = st.text_input('Solvent_type')
-    # with col1:
-    #     Catalyst = st.text_input('Catalyst')
-    # with col2:
-    #     Atmosphere = st.text_input('Atmosphere')
-    # with col3:
-    #     Coal = st.text_input('Coal')
- 
     #输入格式处理  遍历一遍 判断类型 前面是float:.2f  后面是int
+    myshow = ''
+    
+    ret_li = input_check.input_check_all(Mad, Ad, Vdaf, Cin, Hin, Nin, Sin, Oin, Tin, Pin, Time, Addition, nS, Sc, Solvent_type, Catalyst, Atmosphere)
+    if ret_li==None:
+        my_show = "请检查，所有项都需要设置且不能为零！"
+    else:
+        my_show = f"输入数据：{ret_li}，请点击使用模型进行预测。"
 
-    prediction = ''
+    col1, col2, col3 = st.columns(3)
+    with col1:
+        st.success(my_show)
+    # col1, col2, col3 = st.columns(3)  #Mad, Ad, Vdaf, C, H, N, S, O,T,P, Time, Addition, nS, Sc, Solvent_type, Catalyst, Atmosphere, Coal
+    
+    myshow_rf = ""
+    myshow_li = ""
+    myshow_xgb = ""
     # About the sites
     col1, col2, col3 = st.columns(3)
     with col1:
-        if st.button("RF Prediction"):
-            #RF_Conversion_prediction = RF_conversion_model.predict([[fo, fhi, flo, Jitter_percent, Jitter_Abs, RAP, PPQ,DDP,Shimmer,Shimmer_dB,APQ3,APQ5,APQ,DDA,NHR,HNR,RPDE,DFA,spread1,spread2,D2,PPE]])
-            pair = RandomForest()
-            prediction = f"RF模型预测下的转化率为：{pair[0][0]:.2f}%，油产率为{pair[1][0]:.2f}%"
+        if st.button("随机森林预测"):
+            if ret_li==None:
+                myshow_rf = "请继续输入数据！"
+            else:
+                pair = RandomForest(Mad, Ad, Vdaf, Cin, Hin, Nin, Sin, Oin, Tin, Pin, Time, Addition, nS, Sc, Solvent_type, Catalyst, Atmosphere)
+                myshow_rf = f"建议在反应温度为{Tin}℃、反应压力为{Pin}MPa、恒温时间为{Time}min的条件下进行反应。预估转化率为{pair[0][0]:.2f}%，油产率为{pair[1][0]:.2f}%"
+        st.success(myshow_rf)
     with col2:
-        if st.button("Lightgbm Prediction"):
-            #RF_Conversion_prediction = RF_conversion_model.predict([[fo, fhi, flo, Jitter_percent, Jitter_Abs, RAP, PPQ,DDP,Shimmer,Shimmer_dB,APQ3,APQ5,APQ,DDA,NHR,HNR,RPDE,DFA,spread1,spread2,D2,PPE]])
-            lightgbm()
-            prediction = ""
+        if st.button("Lightgbm预测"):
+            if ret_li==None:
+                myshow_li = "请继续输入数据！"
+            else:
+                pair = lightgbm(Mad, Ad, Vdaf, Cin, Hin, Nin, Sin, Oin, Tin, Pin, Time, Addition, nS, Sc, Solvent_type, Catalyst, Atmosphere)
+                myshow_li = f"建议在反应温度为{Tin}℃、反应压力为{Pin}MPa、恒温时间为{Time}min的条件下进行反应。预估转化率为{pair[0][0]:.2f}%，油产率为{pair[1][0]:.2f}%"
+        st.success(myshow_li)
     with col3:
-        if st.button("XGBoost Prediction"):
-            #RF_Conversion_prediction = RF_conversion_model.predict([[fo, fhi, flo, Jitter_percent, Jitter_Abs, RAP, PPQ,DDP,Shimmer,Shimmer_dB,APQ3,APQ5,APQ,DDA,NHR,HNR,RPDE,DFA,spread1,spread2,D2,PPE]])
-            xgboost()           
-            prediction = ""
-    st.success(prediction)
+        if st.button("XGBoost预测"):
+            if ret_li==None:
+                myshow_xgb = "请继续输入数据！"
+            else:
+                pair = xgboost(Mad, Ad, Vdaf, Cin, Hin, Nin, Sin, Oin, Tin, Pin, Time, Addition, nS, Sc, Solvent_type, Catalyst, Atmosphere)           
+                myshow_xgb = f"建议在反应温度为{Tin}℃、反应压力为{Pin}MPa、恒温时间为{Time}min的条件下进行反应。预估转化率为{pair[0][0]:.2f}%，油产率为{pair[1][0]:.2f}%"
+        st.success(myshow_xgb)
 else:
     st.title('总结')
 
