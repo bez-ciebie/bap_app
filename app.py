@@ -286,7 +286,6 @@ elif menu == '模型预测':
         Time = st.number_input('Time')
     with col5:
         Atmosphere = st.number_input('Atmosphere')
-   
     #st.write("催化剂")
     col1, col2, col3, col4, col5, col6, col7, col8 = st.columns(8)
     with col1:
